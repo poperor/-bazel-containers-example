@@ -1,0 +1,36 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_docker//container:container.bzl", "container_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_push")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importpath = "github.com/poperor/bazel-containers-example/cmd/api",
+    visibility = ["//visibility:private"],
+    deps = [
+        "@com_github_gorilla_mux//:go_default_library",
+        "@org_golang_x_crypto//bcrypt:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "api",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
+
+container_image(
+    name = "image",
+    base = "@alpine_linux_amd64//image",
+    entrypoint = ["/api"],
+    files = [":api"],
+    repository = "poperor",
+)
+
+container_push(
+    name = "image-push",
+    format = "Docker",
+    image = ":image",
+    registry = "index.docker.io",
+    repository = "poperor/cmd-api",
+)
